@@ -102,13 +102,30 @@ class Conductor:
         self._registry = {}
         self.role      = {}
 
-        next_addr  = 0x08
-        no_resp_ms = 0
-        deadline   = time.monotonic() + total_timeout_sec
+        # ── Step 1: Restore already-assigned modules ──────────────────────────
+        # Ping each address in the pool. If a module is already assigned there
+        # from a previous run (it keeps its address until power-cycled), restore
+        # it directly without needing to go through 0x7F enumeration again.
+        restored = self._restore_state()
+        if restored > 0:
+            print(f"  {restored} module(s) already assigned.")
 
-        # 3000 ms no-response threshold: if a module collides and re-backs off
-        # (50–549 ms), we need to wait long enough for it to return.
-        while no_resp_ms < 3000 and time.monotonic() < deadline:
+        # Determine next free address (skip ones already in use)
+        used = {m.address for m in self._registry.values() if m is not None}
+        next_addr = 0x08
+        while next_addr in used:
+            next_addr += 1
+
+        # ── Step 2: Scan 0x7F for new (unassigned) modules ───────────────────
+        # Use a shorter timeout when we already have modules — if nothing new
+        # appears on 0x7F within 1 s, we're done. Use 3 s when starting fresh
+        # to handle re-backoffs after collisions.
+        no_resp_limit = 1000 if restored > 0 else 3000
+        no_resp_ms    = 0
+        deadline      = time.monotonic() + total_timeout_sec
+        new_found     = 0
+
+        while no_resp_ms < no_resp_limit and time.monotonic() < deadline:
 
             buf = self._read(self.ENUM_ADDR, 10)
 
@@ -144,16 +161,75 @@ class Conductor:
                 type_name = f"Unknown(0x{module_type:02X})"
 
             if module is not None:
-                module._uid_hex = uid_hex   # store UID for save_roles() / setup_roles()
+                module._uid_hex = uid_hex
 
             self._registry[uid_hex] = module
-            print(f"  {type_name} → 0x{addr:02X}  UID: {uid_hex}")
+            new_found += 1
+            print(f"  {type_name} → 0x{addr:02X}  UID: {uid_hex}  [new]")
 
             time.sleep(0.02)
 
+        # ── Step 3: Save state so next run can restore without 0x7F scan ─────
+        self._save_state()
+
+        # ── Summary ───────────────────────────────────────────────────────────
         total = sum([len(self.buzzer), len(self.knob), len(self.keyboard)])
-        print(f"Done — {total} module(s) found.")
+        if new_found == 0 and restored > 0:
+            print(f"No new modules. {restored} module(s) already assigned:")
+            for uid, m in self._registry.items():
+                if m: print(f"  {type(m).__name__} at 0x{m.address:02X}  UID: {uid}")
+        else:
+            print(f"Done — {total} module(s) ({restored} restored, {new_found} new).")
         return total
+
+    # ── State persistence ────────────────────────────────────────────────────
+
+    def _save_state(self, filename="noknok_state.json"):
+        """Save current module assignments to JSON so next run can restore them."""
+        data = {}
+        for uid_hex, module in self._registry.items():
+            if module is not None:
+                t = self.TYPE_BUZZER   if isinstance(module, NoknokBuzzer) else 0
+                data[uid_hex] = {"address": module.address, "type": t}
+        try:
+            with open(filename, "w") as f:
+                json.dump(data, f)
+        except OSError:
+            pass   # read-only filesystem — silently skip
+
+    def _restore_state(self, filename="noknok_state.json"):
+        """
+        Load saved state and ping each module at its known address.
+        Modules that respond are added to the registry directly.
+        Returns the number of modules successfully restored.
+        """
+        try:
+            with open(filename, "r") as f:
+                data = json.load(f)
+        except OSError:
+            return 0   # no saved state yet
+
+        restored = 0
+        for uid_hex, info in data.items():
+            addr      = info.get("address", 0)
+            type_code = info.get("type",    0)
+
+            # Ping: try to read 1 status byte from the saved address
+            if self._read(addr, 1) is None:
+                continue   # module not there (disconnected or power-cycled)
+
+            if type_code == self.TYPE_BUZZER:
+                module = NoknokBuzzer(self.i2c, address=addr)
+                module._uid_hex = uid_hex
+                self.buzzer.append(module)
+            else:
+                module = None
+
+            if module is not None:
+                self._registry[uid_hex] = module
+                restored += 1
+
+        return restored
 
     # ── Role management ───────────────────────────────────────────────────────
 
