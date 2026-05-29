@@ -147,6 +147,20 @@ c.buzzer[1].play(880, 500)   # second buzzer (if present)
 
 ---
 
+## Files on the Pico
+
+The following files need to be present on the Pico's CIRCUITPY drive:
+
+| File | Purpose |
+|------|---------|
+| `noknok.py` | noknok library — required by all scripts |
+| `noknok_state.json` | Auto-created by `enumerate()` — stores module addresses so re-runs don't need to re-enumerate |
+| `noknok_roles.json` | Created by `noknok_setup_roles.py` — maps role names to UIDs |
+
+> **Filesystem write access required.** `noknok_state.json` and `noknok_roles.json` are written automatically by the library. The Pico filesystem must be writable from code. In CircuitPython, this requires remounting the filesystem — see the [CircuitPython filesystem docs](https://docs.circuitpython.org/en/latest/docs/library/storage.html).
+
+---
+
 ## Hardware
 
 | Spec | Value |
@@ -178,7 +192,7 @@ make flash  # compile + flash via WCH Link-E
 
 | Metric | Value |
 |--------|-------|
-| Firmware version | v3.0 |
+| Firmware version | v3.1 |
 | Flash used | 2756 B of 16 KB (17%) |
 | RAM used | 76 B of 2 KB (4%) |
 
