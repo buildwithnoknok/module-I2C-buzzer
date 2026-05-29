@@ -172,29 +172,45 @@ static uint8_t crc8(const uint8_t *data, uint8_t len)
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * BACKOFF TIMER  —  FNV-1a hash of 8 UID bytes
- * Robust against chips from same batch with near-identical UIDs.
- * Initial range: 300–2799 ms.
- * On collision re-backoff: mixes in current ms_tick for non-determinism.
+ * BACKOFF TIMER  —  proper FNV-1a hash of 8 UID bytes
+ *
+ * Bug fix v3.1: previous version computed h = seed XOR 2166136261 as the
+ * starting value. When seed == 2166136261 (the FNV offset basis), this
+ * gave h = 0, nullifying the offset and causing chips from the same batch
+ * to produce near-identical backoff times (10 ms apart → collision).
+ *
+ * Fix: calc_backoff() now starts with h = 2166136261 (the FNV-1a offset)
+ * directly, without XOR. This is correct FNV-1a and spreads same-batch
+ * chips reliably across the full 300–2799 ms range.
+ *
+ * Re-backoff on collision uses ms_tick as seed and a shorter range (50–549ms)
+ * so the Conductor doesn't have to wait long for retry.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 static uint32_t backoff_ms;
 static uint32_t enum_ready_start_ms = 0;
 
-static uint32_t fnv_backoff(uint32_t seed)
+/* Standard FNV-1a hash over 8 UID bytes starting from given h value */
+static uint32_t fnv_hash(uint32_t h)
 {
     volatile uint8_t *uid = UID_ADDR;
-    uint32_t h = seed ^ 2166136261UL;
     for (uint8_t i = 0; i < UID_LEN; i++) {
         h ^= uid[i];
         h *= 16777619UL;
     }
-    return (h % 2500) + 300;
+    return h;
 }
 
+/* Initial backoff: proper FNV-1a, range 300–2799 ms */
 static void calc_backoff(void)
 {
-    backoff_ms = fnv_backoff(2166136261UL);
+    backoff_ms = (fnv_hash(2166136261UL) % 2500) + 300;
+}
+
+/* Re-backoff after collision: seed with ms_tick, short range 50–549 ms */
+static uint32_t calc_rebackoff_ms(void)
+{
+    return ms_tick + (fnv_hash(ms_tick) % 500) + 50;
 }
 
 
@@ -507,11 +523,12 @@ int main(void)
         }
 
         /* Safety net: if not assigned within 200 ms, a collision likely
-         * occurred. Re-backoff using ms_tick as seed for non-determinism. */
+         * occurred. Re-backoff with short range (50–549 ms) so the
+         * Conductor finds the module quickly on the next attempt. */
         if (dev_state == DEV_ENUM_READY && (now - enum_ready_start_ms) > 200)
         {
             I2C1->CTLR1 &= ~I2C_CTLR1_PE;
-            backoff_ms = now + fnv_backoff(now);
+            backoff_ms = calc_rebackoff_ms();
             dev_state  = DEV_BOOT_WAITING;
         }
 

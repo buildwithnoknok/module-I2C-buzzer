@@ -106,7 +106,9 @@ class Conductor:
         no_resp_ms = 0
         deadline   = time.monotonic() + total_timeout_sec
 
-        while no_resp_ms < 500 and time.monotonic() < deadline:
+        # 3000 ms no-response threshold: if a module collides and re-backs off
+        # (50–549 ms), we need to wait long enough for it to return.
+        while no_resp_ms < 3000 and time.monotonic() < deadline:
 
             buf = self._read(self.ENUM_ADDR, 10)
 
