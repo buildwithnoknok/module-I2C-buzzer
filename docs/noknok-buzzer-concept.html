@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>noknok Buzzer Module — Concept</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e8eaf0;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 48px;
+    }
+
+    /* ── Main layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 0;
+      max-width: 1000px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    /* ── Panels ── */
+    .panel {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #2a2d3a;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-header .chip {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .panel-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .panel-header .sub {
+      font-size: 11px;
+      opacity: 0.55;
+      margin-left: auto;
+    }
+
+    .panel-body {
+      padding: 0 16px 20px;
+    }
+
+    /* Pico */
+    .pico .panel-header  { background: #1a2a1a; border-bottom: 1px solid #2a3a2a; }
+    .pico .chip          { background: #4ade80; }
+    .pico .panel-header h2 { color: #4ade80; }
+
+    /* Buzzer */
+    .buzzer .panel-header { background: #1a1a2e; border-bottom: 1px solid #2a2a4a; }
+    .buzzer .chip         { background: #818cf8; }
+    .buzzer .panel-header h2 { color: #818cf8; }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: #141720;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+    }
+
+    .code-block .comment { color: #4b5563; }
+    .code-block .fn      { color: #fbbf24; }
+    .code-block .str     { color: #34d399; }
+    .code-block .num     { color: #f9a8d4; }
+    .code-block .kw      { color: #818cf8; }
+    .code-block .obj     { color: #93c5fd; }
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #4b5563;
+      margin-top: 18px;
+      margin-bottom: 4px;
+      padding-left: 2px;
+    }
+
+    /* ── Bytes visualization ── */
+    .bytes {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .byte {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .byte-box {
+      width: 46px;
+      height: 36px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .byte-label {
+      font-size: 9px;
+      color: #6b7280;
+      text-align: center;
+      max-width: 46px;
+      line-height: 1.3;
+    }
+
+    .byte-cmd  .byte-box { background: #1e293b; color: #f59e0b; border-color: #f59e0b44; }
+    .byte-freq .byte-box { background: #1e293b; color: #34d399; border-color: #34d39944; }
+    .byte-dur  .byte-box { background: #1e293b; color: #f9a8d4; border-color: #f9a8d444; }
+    .byte-vol  .byte-box { background: #1e293b; color: #93c5fd; border-color: #93c5fd44; }
+    .byte-tune .byte-box { background: #1e293b; color: #c084fc; border-color: #c084fc44; }
+
+    /* ── I2C bus (middle column) ── */
+    .bus-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 60px;
+    }
+
+    .bus-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #4b5563;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .bus-wires {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .wire {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 24px;
+    }
+
+    .wire-line {
+      flex: 1;
+      height: 2px;
+    }
+
+    .wire-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .wire-name {
+      font-size: 10px;
+      font-weight: 600;
+      width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .wire-gnd  .wire-line, .wire-gnd  .wire-dot { background: #6b7280; }
+    .wire-gnd  .wire-name { color: #6b7280; }
+    .wire-vcc  .wire-line, .wire-vcc  .wire-dot { background: #f87171; }
+    .wire-vcc  .wire-name { color: #f87171; }
+    .wire-sda  .wire-line, .wire-sda  .wire-dot { background: #fbbf24; }
+    .wire-sda  .wire-name { color: #fbbf24; }
+    .wire-scl  .wire-line, .wire-scl  .wire-dot { background: #60a5fa; }
+    .wire-scl  .wire-name { color: #60a5fa; }
+
+    .arrow-row {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .arrow {
+      font-size: 20px;
+      color: #374151;
+    }
+
+    .arrow-label {
+      font-size: 9px;
+      color: #4b5563;
+      text-align: center;
+      max-width: 90px;
+      line-height: 1.4;
+    }
+
+    /* ── Tune library inside CH32V003 ── */
+    .tune-library {
+      background: #12131f;
+      border: 1px solid #2a2a4a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+
+    .tune-library-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tune-library-header .icon {
+      font-size: 16px;
+    }
+
+    .tune-library-header span {
+      font-size: 12px;
+      font-weight: 600;
+      color: #818cf8;
+    }
+
+    .tune-library-header .badge {
+      margin-left: auto;
+      font-size: 10px;
+      background: #1e1e3a;
+      color: #6b7280;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid #2a2a4a;
+    }
+
+    .tune-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e1e30;
+    }
+
+    .tune-row:last-child { border-bottom: none; }
+
+    .tune-id {
+      font-family: monospace;
+      font-size: 11px;
+      color: #c084fc;
+      width: 32px;
+      flex-shrink: 0;
+    }
+
+    .tune-name {
+      font-size: 12px;
+      color: #e8eaf0;
+      flex: 1;
+    }
+
+    .tune-notes {
+      font-size: 10px;
+      color: #4b5563;
+      font-family: monospace;
+    }
+
+    /* ── Logic section ── */
+    .logic-box {
+      background: #141720;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+
+    .logic-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e2030;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .logic-row:last-child { border-bottom: none; }
+
+    .logic-cmd {
+      font-family: monospace;
+      color: #f59e0b;
+      width: 40px;
+      flex-shrink: 0;
+      font-size: 11px;
+      padding-top: 1px;
+    }
+
+    .logic-arrow {
+      color: #374151;
+      flex-shrink: 0;
+    }
+
+    .logic-desc {
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    /* ── Footer note ── */
+    .footer {
+      max-width: 1000px;
+      margin: 32px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .footer-card {
+      background: #141720;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .footer-card h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .footer-card p {
+      font-size: 12.5px;
+      color: #9ca3af;
+      line-height: 1.6;
+    }
+
+    .footer-card strong { color: #e8eaf0; }
+
+    /* connector badge */
+    .connector-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a1f2e;
+      border: 1px solid #2a2d3a;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 10px;
+    }
+
+    .connector-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>noknok — Buzzer Module Concept</h1>
+  <p class="subtitle">Conductor (Pico) &nbsp;↔&nbsp; Musician (CH32V003) &nbsp;·&nbsp; I²C over JST SH 4-pin</p>
+
+  <div class="layout">
+
+    <!-- ══ LEFT: PICO ══ -->
+    <div class="panel pico">
+      <div class="panel-header">
+        <div class="chip"></div>
+        <h2>Conductor</h2>
+        <span class="sub">Raspberry Pi Pico</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="label">What you write in Python</div>
+        <div class="code-block">
+          <span class="comment"># Single note — fire and forget</span><br>
+          <span class="obj">buzzer</span>.<span class="fn">play</span>(<span class="num">440</span>, duration=<span class="num">2.0</span>)<br>
+          <span class="obj">buzzer</span>.<span class="fn">play</span>(<span class="num">440</span>, duration=<span class="num">2.0</span>, volume=<span class="num">75</span>)<br>
+          <br>
+          <span class="comment"># Predefined tune — also fire and forget</span><br>
+          <span class="obj">buzzer</span>.<span class="fn">play</span>(<span class="str">"nokia-tune"</span>)<br>
+          <span class="obj">buzzer</span>.<span class="fn">play</span>(<span class="str">"happy-birthday"</span>)<br>
+          <span class="obj">buzzer</span>.<span class="fn">play</span>(<span class="str">"beep-ok"</span>)<br>
+          <br>
+          <span class="comment"># Stop at any time</span><br>
+          <span class="obj">buzzer</span>.<span class="fn">stop</span>()
+        </div>
+
+        <div class="label">What gets sent over I²C — single note</div>
+        <div class="bytes">
+          <div class="byte byte-cmd">
+            <div class="byte-box">0x01</div>
+            <div class="byte-label">CMD<br>PLAY NOTE</div>
+          </div>
+          <div class="byte byte-freq">
+            <div class="byte-box">0x01</div>
+            <div class="byte-label">FREQ<br>high byte</div>
+          </div>
+          <div class="byte byte-freq">
+            <div class="byte-box">0xB8</div>
+            <div class="byte-label">FREQ<br>low byte</div>
+          </div>
+          <div class="byte byte-dur">
+            <div class="byte-box">0x14</div>
+            <div class="byte-label">DUR<br>×100ms</div>
+          </div>
+          <div class="byte byte-vol">
+            <div class="byte-box">0x64</div>
+            <div class="byte-label">VOL<br>0–100</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#4b5563;margin-top:6px;padding-left:2px;">
+          Example: 440 Hz · 2.0 s · 100% volume &nbsp;→&nbsp; 5 bytes total
+        </div>
+
+        <div class="label">What gets sent over I²C — predefined tune</div>
+        <div class="bytes">
+          <div class="byte byte-cmd">
+            <div class="byte-box">0x02</div>
+            <div class="byte-label">CMD<br>PLAY TUNE</div>
+          </div>
+          <div class="byte byte-tune">
+            <div class="byte-box">0x01</div>
+            <div class="byte-label">TUNE ID<br>#1</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#4b5563;margin-top:6px;padding-left:2px;">
+          Example: "nokia-tune" (ID 0x01) &nbsp;→&nbsp; just 2 bytes
+        </div>
+
+        <div class="label">What gets sent over I²C — stop</div>
+        <div class="bytes">
+          <div class="byte byte-cmd">
+            <div class="byte-box">0x00</div>
+            <div class="byte-label">CMD<br>STOP</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#4b5563;margin-top:6px;padding-left:2px;">
+          1 byte. Immediate stop, no matter what's playing.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ MIDDLE: BUS ══ -->
+    <div class="bus-col">
+      <div class="bus-label">I²C Bus</div>
+      <div class="bus-wires">
+        <div class="wire wire-gnd">
+          <div class="wire-dot"></div>
+          <div class="wire-line"></div>
+          <div class="wire-name">GND</div>
+          <div class="wire-line"></div>
+          <div class="wire-dot"></div>
+        </div>
+        <div class="wire wire-vcc">
+          <div class="wire-dot"></div>
+          <div class="wire-line"></div>
+          <div class="wire-name">3.3V</div>
+          <div class="wire-line"></div>
+          <div class="wire-dot"></div>
+        </div>
+        <div class="wire wire-sda">
+          <div class="wire-dot"></div>
+          <div class="wire-line"></div>
+          <div class="wire-name">SDA</div>
+          <div class="wire-line"></div>
+          <div class="wire-dot"></div>
+        </div>
+        <div class="wire wire-scl">
+          <div class="wire-dot"></div>
+          <div class="wire-line"></div>
+          <div class="wire-name">SCL</div>
+          <div class="wire-line"></div>
+          <div class="wire-dot"></div>
+        </div>
+      </div>
+
+      <div class="arrow-row">
+        <div class="arrow">→</div>
+        <div class="arrow-label">commands &amp; data from Pico</div>
+        <div style="height:12px"></div>
+        <div class="arrow">←</div>
+        <div class="arrow-label">status reply (1 byte)</div>
+      </div>
+
+      <div style="margin-top:20px;text-align:center;">
+        <div class="connector-badge">
+          <div class="dot" style="background:#fbbf24"></div>
+          JST SH 4-pin
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT: CH32V003 ══ -->
+    <div class="panel buzzer">
+      <div class="panel-header">
+        <div class="chip"></div>
+        <h2>Musician — Buzzer</h2>
+        <span class="sub">CH32V003 · 16KB flash</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="label">What the firmware does with each command</div>
+        <div class="logic-box">
+          <div class="logic-row">
+            <div class="logic-cmd">0x00</div>
+            <div class="logic-arrow">→</div>
+            <div class="logic-desc">Stop PWM immediately. Clear busy flag.</div>
+          </div>
+          <div class="logic-row">
+            <div class="logic-cmd">0x01</div>
+            <div class="logic-arrow">→</div>
+            <div class="logic-desc">Read freq (2 bytes), duration, volume. Calculate PWM prescaler. Set duty cycle. Start timer. Return to I²C immediately — timer runs in background.</div>
+          </div>
+          <div class="logic-row">
+            <div class="logic-cmd">0x02</div>
+            <div class="logic-arrow">→</div>
+            <div class="logic-desc">Read tune ID. Look up note sequence in flash. Play each note in sequence, then silence. Return to I²C immediately — tune runs in background.</div>
+          </div>
+          <div class="logic-row">
+            <div class="logic-cmd">READ</div>
+            <div class="logic-arrow">→</div>
+            <div class="logic-desc">Reply with 1 byte: <span style="color:#4ade80;font-family:monospace">0x01</span> = playing, <span style="color:#4ade80;font-family:monospace">0x00</span> = idle.</div>
+          </div>
+        </div>
+
+        <div class="label">Tune library — stored in CH32V003 flash</div>
+        <div class="tune-library">
+          <div class="tune-library-header">
+            <span class="icon">🎵</span>
+            <span>Preinstalled Tunes</span>
+            <span class="badge">read-only · in flash</span>
+          </div>
+          <div class="tune-row">
+            <div class="tune-id">0x01</div>
+            <div class="tune-name">Nokia Tune</div>
+            <div class="tune-notes">13 notes</div>
+          </div>
+          <div class="tune-row">
+            <div class="tune-id">0x02</div>
+            <div class="tune-name">Happy Birthday</div>
+            <div class="tune-notes">25 notes</div>
+          </div>
+          <div class="tune-row">
+            <div class="tune-id">0x03</div>
+            <div class="tune-name">Beep — OK</div>
+            <div class="tune-notes">2 notes</div>
+          </div>
+          <div class="tune-row">
+            <div class="tune-id">0x04</div>
+            <div class="tune-name">Beep — Error</div>
+            <div class="tune-notes">2 notes</div>
+          </div>
+          <div class="tune-row">
+            <div class="tune-id">0x05</div>
+            <div class="tune-name">Startup Chime</div>
+            <div class="tune-notes">4 notes</div>
+          </div>
+          <div class="tune-row" style="border-bottom:none;opacity:0.4">
+            <div class="tune-id">0x06+</div>
+            <div class="tune-name">Reserved for future tunes</div>
+            <div class="tune-notes"></div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:#4b5563;margin-top:10px;padding-left:2px;line-height:1.6;">
+          Each tune = array of <code style="color:#818cf8">{freq, duration_ms}</code> pairs.<br>
+          Stored as <code style="color:#818cf8">const</code> in C → compiled into flash. Zero RAM cost.
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /layout -->
+
+  <!-- ══ FOOTER CARDS ══ -->
+  <div class="footer">
+
+    <div class="footer-card">
+      <h3>Why fire and forget?</h3>
+      <p>
+        The Pico sends a command and <strong>moves on instantly</strong>. The CH32V003 handles all timing internally using its hardware timer. The Pico never has to wait or count milliseconds — it's free to do other things while the buzzer plays.
+      </p>
+    </div>
+
+    <div class="footer-card">
+      <h3>Why tunes on the CH32V003?</h3>
+      <p>
+        Tunes are <strong>always available</strong>, no matter what app is on the Pico. The Pico sends 2 bytes. The CH32V003 knows the rest. Adding a new tune means updating the buzzer firmware — independent of any Pico app.
+      </p>
+    </div>
+
+    <div class="footer-card">
+      <h3>Memory usage</h3>
+      <p>
+        CH32V003 has <strong>16 KB flash</strong>. A tune with 25 notes costs ~100 bytes. Ten tunes = ~1 KB. Firmware logic = ~3–4 KB. Plenty of room for the standard register header and OTA bootloader too.
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>
