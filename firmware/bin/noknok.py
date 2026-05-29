@@ -2,16 +2,18 @@
 # CircuitPython library for the noknok modular ecosystem
 # Raspberry Pi Pico — I2C master ("Conductor")
 #
-# Usage:
+# Quick start:
 #   from noknok import Conductor
 #   c = Conductor()
-#   c.enumerate()
-#   c.buzzer[0].play(440, 500)
-#   c.buzzer[1].tune(c.buzzer[1].NOKIA)
+#   c.enumerate()                          # discover all modules (~3 s)
+#   c.load_roles()                         # load noknok_roles.json (optional)
+#   c.role["volume_knob"].value            # access by role name
+#   c.buzzer[0].play(440, 500)             # or by type + index
 
 import busio
 import board
 import time
+import json
 
 
 # ── CRC8 (polynomial 0x07) — matches firmware ────────────────────────────────
@@ -30,30 +32,39 @@ class Conductor:
     I2C master for the noknok ecosystem.
     Discovers all connected modules and assigns each a unique address.
 
-    Usage:
-        c = Conductor()          # GP8=SDA, GP9=SCL (noknok standard)
-        c.enumerate()            # discover all modules (~3 s)
+    Typical usage:
+        c = Conductor()
+        c.enumerate()           # ~3 s, discovers all modules
+        c.load_roles()          # load noknok_roles.json if it exists
+
+        # Access by role (stable — same physical module every boot):
+        c.role["volume_knob"].value
+        c.role["alert_buzzer"].play(880, 200)
+
+        # Access by type + index (order = discovery order, use when roles don't matter):
         c.buzzer[0].play(440, 500)
-        c.buzzer[1].tune(c.buzzer[1].NOKIA)
+        c.knob[0].value
     """
 
     ENUM_ADDR  = 0x7F
     ASSIGN_REG = 0x1D
 
-    # Module type codes — must match MODULE_TYPE in firmware
     TYPE_BUZZER   = 0x01
     TYPE_KNOB     = 0x02
     TYPE_KEYBOARD = 0x03
+    TYPE_LED      = 0x04
 
     def __init__(self, sda=board.GP8, scl=board.GP9, frequency=100_000):
-        self.i2c    = busio.I2C(scl, sda, frequency=frequency)
-        self.buzzer = []          # list of NoknokBuzzer — indexed by discovery order
-        self._registry = {}       # uid_hex -> module object
+        self.i2c      = busio.I2C(scl, sda, frequency=frequency)
+        self.buzzer   = []    # NoknokBuzzer instances, indexed by discovery order
+        self.knob     = []    # NoknokKnob instances (future)
+        self.keyboard = []    # NoknokKeyboard instances (future)
+        self.role     = {}    # role_name → module object, populated by load_roles()
+        self._registry = {}   # uid_hex → module object
 
-    # ── Low-level I2C helpers ─────────────────────────────────────────────────
+    # ── Low-level I2C ─────────────────────────────────────────────────────────
 
     def _read(self, addr, n):
-        """Read n bytes from addr. Returns bytearray or None on NACK."""
         buf = bytearray(n)
         while not self.i2c.try_lock():
             pass
@@ -66,7 +77,6 @@ class Conductor:
             self.i2c.unlock()
 
     def _write(self, addr, data):
-        """Write bytes to addr. Returns True on success."""
         while not self.i2c.try_lock():
             pass
         try:
@@ -82,21 +92,19 @@ class Conductor:
     def enumerate(self, total_timeout_sec=10):
         """
         Discover all modules on the bus.
-
-        Polls 0x7F every 20 ms. Each responding module sends a 10-byte packet:
-            [UID 8 bytes] [MODULE_TYPE] [CRC8]
-        The Conductor assigns each module a unique address (0x08 upward).
-        Stops after 500 ms of no response.
-
-        Returns the total number of modules found.
+        Polls 0x7F every 20 ms. Stops after 500 ms of no response.
+        Returns total number of modules found.
         """
         print("Enumerating noknok modules...")
         self.buzzer    = []
+        self.knob      = []
+        self.keyboard  = []
         self._registry = {}
+        self.role      = {}
 
-        next_addr    = 0x08
-        no_resp_ms   = 0
-        deadline     = time.monotonic() + total_timeout_sec
+        next_addr  = 0x08
+        no_resp_ms = 0
+        deadline   = time.monotonic() + total_timeout_sec
 
         while no_resp_ms < 500 and time.monotonic() < deadline:
 
@@ -107,7 +115,6 @@ class Conductor:
                 time.sleep(0.02)
                 continue
 
-            # Got a response — reset idle counter
             no_resp_ms = 0
 
             # Verify CRC
@@ -116,17 +123,16 @@ class Conductor:
                 time.sleep(0.05)
                 continue
 
-            uid         = bytes(buf[:8])
-            uid_hex     = uid.hex()
+            uid_hex     = bytes(buf[:8]).hex()
             module_type = buf[8]
             addr        = next_addr
             next_addr  += 1
 
-            # Assign unique address
+            # Assign address
             self._write(self.ENUM_ADDR, [self.ASSIGN_REG, addr])
-            time.sleep(0.05)   # give module time to switch address
+            time.sleep(0.05)
 
-            # Instantiate correct class
+            # Instantiate correct class and store UID on the object
             if module_type == self.TYPE_BUZZER:
                 module    = NoknokBuzzer(self.i2c, address=addr)
                 type_name = "Buzzer"
@@ -135,19 +141,160 @@ class Conductor:
                 module    = None
                 type_name = f"Unknown(0x{module_type:02X})"
 
+            if module is not None:
+                module._uid_hex = uid_hex   # store UID for save_roles() / setup_roles()
+
             self._registry[uid_hex] = module
-            print(f"  [{len(self.buzzer) + (1 if module is None else 0) - 1}] "
-                  f"{type_name} → 0x{addr:02X}  UID: {uid_hex}")
+            print(f"  {type_name} → 0x{addr:02X}  UID: {uid_hex}")
 
             time.sleep(0.02)
 
-        total = len(self.buzzer)
+        total = sum([len(self.buzzer), len(self.knob), len(self.keyboard)])
         print(f"Done — {total} module(s) found.")
         return total
 
+    # ── Role management ───────────────────────────────────────────────────────
+
+    def load_roles(self, filename="noknok_roles.json"):
+        """
+        Load role assignments from a JSON file on the Pico's CIRCUITPY drive.
+
+        The file maps role names to UIDs:
+            {
+              "volume_knob":   "e2afabcd4af0bc74",
+              "menu_knob":     "e292abcd4ad3bc74",
+              "alert_buzzer":  "e290abcd4ad1bc74"
+            }
+
+        After loading:
+            c.role["volume_knob"].value
+            c.role["alert_buzzer"].play(880, 200)
+
+        Returns True if all roles were found, False if any are missing.
+        """
+        try:
+            with open(filename, "r") as f:
+                mapping = json.load(f)
+        except OSError:
+            print(f"  No roles file found at '{filename}'")
+            print(f"  Run c.setup_roles() to create one.")
+            return False
+
+        print(f"Loading roles from '{filename}'...")
+        self.role = {}
+        missing   = []
+
+        for role_name, uid_hex in mapping.items():
+            uid_hex = uid_hex.lower().replace("-", "").replace(" ", "")
+            module  = self._registry.get(uid_hex)
+            if module is not None:
+                self.role[role_name] = module
+                type_name = type(module).__name__
+                print(f"  '{role_name}' → {type_name} at 0x{module.address:02X}")
+            else:
+                self.role[role_name] = None
+                missing.append(role_name)
+                print(f"  '{role_name}' → NOT FOUND  (UID: {uid_hex})")
+
+        if missing:
+            print(f"  ⚠ {len(missing)} role(s) not found: {', '.join(missing)}")
+        else:
+            print(f"  All {len(self.role)} role(s) loaded.")
+
+        return len(missing) == 0
+
+    def save_roles(self, mapping, filename="noknok_roles.json"):
+        """
+        Save a role mapping dict to a JSON file.
+        mapping = { "role_name": module_object, ... }
+
+        Example:
+            c.save_roles({
+                "volume_knob":  c.knob[0],
+                "alert_buzzer": c.buzzer[0],
+            })
+        """
+        data = {}
+        for role_name, module in mapping.items():
+            if module is not None and hasattr(module, "_uid_hex"):
+                data[role_name] = module._uid_hex
+            else:
+                print(f"  ⚠ Skipping '{role_name}' — no UID available")
+
+        with open(filename, "w") as f:
+            json.dump(data, f)
+
+        print(f"Saved {len(data)} role(s) to '{filename}'")
+
+    def setup_roles(self, filename="noknok_roles.json"):
+        """
+        Interactive role assignment wizard. Run once from the Thonny REPL.
+
+        Walks through every discovered module, plays/activates it so you know
+        which physical unit it is, then asks you to type a role name.
+        Saves the result to noknok_roles.json.
+
+        Example session:
+            >>> c.enumerate()
+            >>> c.setup_roles()
+            Module 1/3: Buzzer at 0x08  (UID: e2afabcd4af0bc74)
+            Playing a beep so you can identify it...
+            Role name (Enter to skip): alert_buzzer
+            → assigned as 'alert_buzzer'
+            ...
+            Saved 2 role(s) to 'noknok_roles.json'
+        """
+        all_modules = []
+        for uid_hex, module in self._registry.items():
+            if module is not None:
+                all_modules.append((uid_hex, module))
+
+        if not all_modules:
+            print("No modules found. Run enumerate() first.")
+            return
+
+        print(f"\nRole setup wizard — {len(all_modules)} module(s) found.")
+        print("For each module: identify it, then type a role name or press Enter to skip.")
+        print("The role name is how you'll refer to it in your code: c.role[\"name\"]\n")
+
+        assignment = {}
+
+        for i, (uid_hex, module) in enumerate(all_modules):
+            type_name = type(module).__name__
+            print(f"Module {i+1}/{len(all_modules)}: {type_name} at 0x{module.address:02X}  (UID: {uid_hex})")
+
+            # Identify the module — activate it so the user knows which one it is
+            if isinstance(module, NoknokBuzzer):
+                print("  → Playing a beep so you can identify it...")
+                module.tune(module.BEEP_OK)
+                time.sleep(0.5)
+
+            role = input("  Role name (or Enter to skip): ").strip()
+
+            if role:
+                assignment[role] = module._uid_hex
+                print(f"  → assigned as '{role}'\n")
+            else:
+                print(f"  → skipped\n")
+
+        if assignment:
+            with open(filename, "w") as f:
+                json.dump(assignment, f)
+            print(f"Saved {len(assignment)} role(s) to '{filename}'")
+            print(f"\nIn your app code:")
+            print(f"  c.enumerate()")
+            print(f"  c.load_roles()")
+            for role_name in assignment:
+                print(f"  c.role[\"{role_name}\"]  # always this physical module")
+        else:
+            print("No roles assigned. File not written.")
+
+    # ── Lookup ────────────────────────────────────────────────────────────────
+
     def by_uid(self, uid_hex):
-        """Return a module by its UID hex string (hyphens ignored)."""
-        return self._registry.get(uid_hex.lower().replace('-', '').replace(' ', ''))
+        """Return a module by its UID hex string (hyphens and spaces ignored)."""
+        key = uid_hex.lower().replace("-", "").replace(" ", "")
+        return self._registry.get(key)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -158,13 +305,10 @@ class NoknokBuzzer:
     Normally obtained via Conductor.enumerate():
         c = Conductor()
         c.enumerate()
-        b = c.buzzer[0]
-
-    Can also be used standalone with a known address:
-        b = NoknokBuzzer(i2c, address=0x08)
+        b = c.buzzer[0]            # by discovery index
+        b = c.role["alert_buzzer"] # by role name (after load_roles)
     """
 
-    # ── Preloaded tune IDs ────────────────────────────────────────────────────
     NOKIA           = 1
     HAPPY_BIRTHDAY  = 2
     BEEP_OK         = 3
@@ -176,8 +320,9 @@ class NoknokBuzzer:
     _CMD_PLAY_TUNE = 0x02
 
     def __init__(self, i2c, address=0x08):
-        self.i2c     = i2c
-        self.address = address
+        self.i2c      = i2c
+        self.address  = address
+        self._uid_hex = None   # set by Conductor.enumerate()
 
     def _send(self, data):
         while not self.i2c.try_lock():
@@ -198,7 +343,7 @@ class NoknokBuzzer:
         return buf
 
     def play(self, freq_hz, duration_ms, volume=100):
-        """Play a single note. Fire and forget."""
+        """Play a single note. Fire and forget — returns immediately."""
         if freq_hz <= 0:
             return self.stop()
         dur     = max(1, int(duration_ms / 100))
@@ -207,7 +352,7 @@ class NoknokBuzzer:
         freq_lo =  freq_hz       & 0xFF
         self._send([self._CMD_PLAY_NOTE, freq_hi, freq_lo, dur, vol])
 
-    beep = play   # backwards compatibility alias
+    beep = play   # backwards compatibility
 
     def note(self, freq_hz, duration_ms, volume=100, gap_ms=50):
         """Play a note and wait until it finishes. Use in melodies."""
