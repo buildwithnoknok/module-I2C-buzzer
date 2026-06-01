@@ -52,7 +52,7 @@ The Pico sends **3–5 bytes** and returns immediately. The CH32V003 handles all
 
 ## I²C Protocol
 
-**I²C address:** assigned dynamically at boot (see [Enumeration](#enumeration) below).
+**I²C address:** assigned dynamically at boot — see [Enumeration](#enumeration).
 
 ### Commands (Pico → Buzzer)
 
@@ -97,18 +97,9 @@ Tunes are stored as `const` arrays in the CH32V003's flash memory. Zero RAM cost
 
 ## Enumeration
 
-The buzzer uses the standard **noknok dynamic enumeration protocol**. There is no hardcoded I²C address.
+The module uses the standard noknok dynamic enumeration protocol — no hardcoded I²C address. At boot it plays the startup chime while counting a UID-derived backoff delay, then joins the bus at `0x7F` for address assignment by the Conductor.
 
-At boot, each module:
-1. Keeps I²C **off** and plays the startup chime
-2. Calculates a unique backoff delay from its hardware UID (FNV‑1a hash, 300–2800 ms)
-3. Enables I²C at the staging address **`0x7F`**
-4. Sends a 10‑byte UID response when the Conductor reads it
-5. Switches to the Conductor‑assigned address and operates normally
-
-This allows **multiple identical buzzer modules** on the same bus — each gets a unique runtime address automatically.
-
-See [Ecosystem / Software Guidelines](https://github.com/buildwithnoknok/Ecosystem/blob/main/software/readme.md) for the full enumeration spec.
+**→ Full protocol spec:** [Ecosystem / software / enumeration.md](https://github.com/buildwithnoknok/Ecosystem/blob/main/software/enumeration.md)
 
 ---
 
@@ -149,15 +140,13 @@ c.buzzer[1].play(880, 500)   # second buzzer (if present)
 
 ## Files on the Pico
 
-The following files need to be present on the Pico's CIRCUITPY drive:
-
 | File | Purpose |
 |------|---------|
 | `noknok.py` | noknok library — from [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico) |
-| `noknok_state.json` | Auto-created by `enumerate()` — stores module addresses so re-runs don't need to re-enumerate |
+| `noknok_state.json` | Auto-created by `enumerate()` — stores module addresses |
 | `noknok_roles.json` | Created by `noknok_setup_roles.py` — maps role names to UIDs |
 
-> **Filesystem write access required.** `noknok_state.json` and `noknok_roles.json` are written automatically by the library. The Pico filesystem must be writable from code. In CircuitPython, this requires remounting the filesystem — see the [CircuitPython filesystem docs](https://docs.circuitpython.org/en/latest/docs/library/storage.html).
+> **Filesystem write access required.** See the [CircuitPython filesystem docs](https://docs.circuitpython.org/en/latest/docs/library/storage.html).
 
 ---
 
@@ -205,7 +194,7 @@ make flash  # compile + flash via WCH Link-E
 | `firmware/src/buzzer_firmware.c` | CH32V003 firmware source |
 | `firmware/src/Makefile` | Build configuration |
 | `firmware/src/funconfig.h` | ch32v003fun config |
-| `firmware/bin/noknok_buzzer_test.py` | Test script — all 6 tests |
+| `firmware/bin/noknok_buzzer_test.py` | Test script |
 | `firmware/bin/noknok_enum_test.py` | Enumeration test — multiple buzzers |
 | `firmware/bin/Buzzer_OdeToTheJoy_Tune.py` | Example melody |
 | `docs/noknok-buzzer-concept.html` | Interactive protocol diagram |
