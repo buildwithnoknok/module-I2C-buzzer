@@ -1,5 +1,5 @@
 /*
- * noknok Buzzer Module Firmware  v3.0
+ * noknok Buzzer Module Firmware  v3.1
  * CH32V003J4M6 (SOP-8)  |  Stack: cnlohr/ch32fun
  *
  * ── What changed from v2 ────────────────────────────────────────────────
@@ -7,7 +7,7 @@
  *   v3 adds dynamic address discovery (enumeration):
  *   - All modules boot with I2C OFF, counting a UID-seeded backoff timer.
  *   - When the timer fires, I2C turns on at the staging address (0x7F).
- *   - The Conductor reads the 14-byte UID+type+CRC response.
+ *   - The Conductor reads the 10-byte UID+type+CRC response.
  *   - The Conductor writes a new unique address. Module switches and is ready.
  *   This allows multiple identical modules on the same bus.
  *
@@ -20,10 +20,10 @@
  *   Staging address : 0x7F
  *   Runtime address : assigned by Conductor (0x08–0x77)
  *
- *   1. Conductor reads 14 bytes from 0x7F:
- *        [UID 0..11]  96-bit hardware UID (little-endian)
+ *   1. Conductor reads 10 bytes from 0x7F:
+ *        [UID 0..7]   64-bit hardware UID (little-endian)
  *        [0x01]       MODULE_TYPE (buzzer)
- *        [CRC8]       CRC8 of bytes 0–12
+ *        [CRC8]       CRC8 of bytes 0–8
  *
  *   2. Conductor writes to 0x7F:
  *        [0x1D, new_addr]   ASSIGN — module switches to new_addr
@@ -148,7 +148,7 @@ static volatile uint8_t rx_buf[RX_BUF_SIZE];
 static volatile uint8_t rx_len    = 0;
 static volatile uint8_t cmd_ready = 0;
 
-/* I2C transmit (used for UID response: 8 UID + 1 type + 1 CRC = 10 bytes) */
+/* I2C transmit (8 UID + 1 type + 1 CRC = 10 bytes) */
 #define TX_BUF_SIZE 10
 static volatile uint8_t tx_buf[TX_BUF_SIZE];
 static volatile uint8_t tx_len = 0;
@@ -325,7 +325,7 @@ static void i2c_switch_addr(uint8_t addr)
 /* ═══════════════════════════════════════════════════════════════════════════
  * I2C EVENT ISR
  * Behaviour depends on dev_state:
- *   DEV_ENUM_READY  — TRA: send 14-byte UID response
+ *   DEV_ENUM_READY  — TRA: send 10-byte UID response
  *                   — RXNE: buffer bytes
  *                   — STOPF: if [0x1D, addr] → flag address switch
  *   DEV_ASSIGNED    — TRA: send 1-byte status
