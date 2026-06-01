@@ -1,4 +1,4 @@
-# Buzzer Module (I²C)
+# noknok Buzzer
 
 A compact I²C‑controlled buzzer module for the noknok ecosystem.  
 Designed for audio feedback, alerts, melodies, and UI interaction in modular builds.
