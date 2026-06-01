@@ -114,7 +114,7 @@ See [Ecosystem / Software Guidelines](https://github.com/buildwithnoknok/Ecosyst
 
 ## Python API
 
-Use the `noknok.py` library (in `/firmware/bin/`) on the Pico.
+Use the `noknok.py` library from the [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico) on the Pico.
 
 ```python
 from noknok import Conductor
@@ -153,7 +153,7 @@ The following files need to be present on the Pico's CIRCUITPY drive:
 
 | File | Purpose |
 |------|---------|
-| `noknok.py` | noknok library — required by all scripts |
+| `noknok.py` | noknok library — from [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico) |
 | `noknok_state.json` | Auto-created by `enumerate()` — stores module addresses so re-runs don't need to re-enumerate |
 | `noknok_roles.json` | Created by `noknok_setup_roles.py` — maps role names to UIDs |
 
@@ -182,13 +182,15 @@ The following files need to be present on the Pico's CIRCUITPY drive:
 
 ## Firmware
 
-Source is in `/firmware/src/`. Build and flash from the RPi4:
+Source is in `firmware/src/`. To build and flash, clone this repo alongside your ch32fun installation and run:
 
 ```bash
-cd /home/noknok/dev/ch32fun/noknok_buzzer
+cd firmware/src
 make        # compile
 make flash  # compile + flash via WCH Link-E
 ```
+
+> ch32fun must be installed at `../ch32fun/` relative to `firmware/src/` — see [cnlohr/ch32v003fun](https://github.com/cnlohr/ch32v003fun) for setup instructions.
 
 | Metric | Value |
 |--------|-------|
@@ -203,7 +205,6 @@ make flash  # compile + flash via WCH Link-E
 | `firmware/src/buzzer_firmware.c` | CH32V003 firmware source |
 | `firmware/src/Makefile` | Build configuration |
 | `firmware/src/funconfig.h` | ch32v003fun config |
-| `firmware/bin/noknok.py` | CircuitPython library (Conductor + NoknokBuzzer) |
 | `firmware/bin/noknok_buzzer_test.py` | Test script — all 6 tests |
 | `firmware/bin/noknok_enum_test.py` | Enumeration test — multiple buzzers |
 | `firmware/bin/Buzzer_OdeToTheJoy_Tune.py` | Example melody |
@@ -216,8 +217,8 @@ make flash  # compile + flash via WCH Link-E
 | Area | Status |
 |------|--------|
 | Hardware | v1.0 |
-| Firmware | **v3.0 — complete** |
-| Python library | **complete** |
+| Firmware | **v3.1 — complete** |
+| Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico)) |
 | Documentation | **complete** |
 
 ---
