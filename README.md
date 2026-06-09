@@ -61,6 +61,7 @@ The Pico sends **3–5 bytes** and returns immediately. The CH32V003 handles all
 | `0x00` | **STOP** | Silence immediately |
 | `0x01` `fH` `fL` `dur` `vol` | **PLAY NOTE** | Play a tone |
 | `0x02` `id` | **PLAY TUNE** | Play a preloaded tune |
+| `0xB0` | **ENTER BOOTLOADER** | Reset into the I²C bootloader for an over‑the‑wire firmware update (see [Firmware](#firmware)) |
 
 **PLAY NOTE fields:**
 
@@ -171,21 +172,22 @@ c.buzzer[1].play(880, 500)   # second buzzer (if present)
 
 ## Firmware
 
-Source is in `firmware/src/`. To build and flash, clone this repo alongside your ch32fun installation and run:
+**v3.2 runs under the shared noknok I²C bootloader** ([module-I2C-bootloader](https://github.com/buildwithnoknok/module-I2C-bootloader)) — the module can be re‑flashed **over the I²C bus** (no SWDIO cable in the field). The application is linked at the `0x1000` offset (`app.ld`) above the 4 KB bootloader and reserves the top 16 B of RAM for the bootloader handoff cell. Command `0xB0` drops the running module into the bootloader for an update.
 
 ```bash
 cd firmware/src
-make        # compile
-make flash  # compile + flash via WCH Link-E
+make build   # compile the offset-linked application -> buzzer_firmware.bin
 ```
+
+Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`). A blank board needs the bootloader SWD‑flashed once first. SWD remains the unbrickable backstop — see *Recovery & SWD flashing* in the [bootloader README](https://github.com/buildwithnoknok/module-I2C-bootloader#recovery--swd-flashing). `make flash` here still does a one‑off SWD flash of the app for bench bring‑up.
 
 > ch32fun must be installed at `../ch32fun/` relative to `firmware/src/` — see [cnlohr/ch32v003fun](https://github.com/cnlohr/ch32v003fun) for setup instructions.
 
 | Metric | Value |
 |--------|-------|
-| Firmware version | v3.1 |
-| Flash used | 2756 B of 16 KB (17%) |
-| RAM used | 76 B of 2 KB (4%) |
+| Firmware version | v3.2 (bootloader‑hosted) |
+| Application size | 2824 B of 11 KB app region (25%) |
+| RAM used | 76 B of ~2 KB (4%) |
 
 ### Files
 
@@ -206,7 +208,7 @@ make flash  # compile + flash via WCH Link-E
 | Area | Status |
 |------|--------|
 | Hardware | v1.0 |
-| Firmware | **v3.1 — complete** |
+| Firmware | **v3.2 — complete (bootloader‑hosted, I²C OTA)** |
 | Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico)) |
 | Documentation | **complete** |
 
