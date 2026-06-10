@@ -106,7 +106,7 @@ The module uses the standard noknok dynamic enumeration protocol — no hardcode
 
 ## Python API
 
-Use the `noknok.py` library from the [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico) on the Pico.
+Use the `noknok.py` library from the [Ecosystem repo](https://github.com/buildwithnoknok/brain-Pico/tree/main/software) on the Pico.
 
 ```python
 from noknok import Conductor
@@ -141,11 +141,13 @@ c.buzzer[1].play(880, 500)   # second buzzer (if present)
 
 ## Files on the Pico
 
+These are **Conductor-level files shared by every module** - not buzzer-specific:
+
 | File | Purpose |
 |------|---------|
-| `noknok.py` | noknok library — from [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico) |
-| `noknok_state.json` | Auto-created by `enumerate()` — stores module addresses |
-| `noknok_roles.json` | Created by `noknok_setup_roles.py` — maps role names to UIDs |
+| `noknok.py` | noknok Conductor library - master copy in [brain-Pico/software](https://github.com/buildwithnoknok/brain-Pico/tree/main/software) |
+| `noknok_state.json` | Module address persistence, auto-created by `enumerate()` - see [enumeration.md](https://github.com/buildwithnoknok/Ecosystem/blob/main/software/enumeration.md) |
+| `noknok_roles.json` | Role -> UID mapping - see [roles.md](https://github.com/buildwithnoknok/Ecosystem/blob/main/software/roles.md) |
 
 > **Filesystem write access required.** See the [CircuitPython filesystem docs](https://docs.circuitpython.org/en/latest/docs/library/storage.html).
 
@@ -196,9 +198,8 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 | `firmware/src/buzzer_firmware.c` | CH32V003 firmware source |
 | `firmware/src/Makefile` | Build configuration |
 | `firmware/src/funconfig.h` | ch32v003fun config |
-| `firmware/bin/noknok_buzzer_test.py` | Test script |
-| `firmware/bin/noknok_enum_test.py` | Enumeration test — multiple buzzers |
-| `firmware/bin/Buzzer_OdeToTheJoy_Tune.py` | Example melody |
+| `firmware/src/app.ld` | Linker script (application at 0x1000, above the 4 KB bootloader) |
+| `firmware/bin/buzzer_firmware.bin` | Compiled application binary |
 | `docs/noknok-buzzer-concept.html` | Interactive protocol diagram |
 
 ---
@@ -209,7 +210,7 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 |------|--------|
 | Hardware | v1.0 |
 | Firmware | **v3.2 — complete (bootloader‑hosted, I²C OTA)** |
-| Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/Ecosystem/tree/main/software/pico)) |
+| Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/brain-Pico/tree/main/software)) |
 | Documentation | **complete** |
 
 ---
