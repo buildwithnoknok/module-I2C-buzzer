@@ -1,5 +1,5 @@
 /*
- * noknok Buzzer Module Firmware  v3.1
+ * noknok Buzzer Module Firmware  v3.3
  * CH32V003J4M6 (SOP-8)  |  Stack: cnlohr/ch32fun
  *
  * ── What changed from v2 ────────────────────────────────────────────────
@@ -35,9 +35,15 @@
  *     [0x00]                     STOP
  *     [0x01, fH, fL, dur, vol]   PLAY NOTE
  *     [0x02, id]                 PLAY TUNE (1–5)
+ *     [0xB0]                     ENTER BOOTLOADER (I2C OTA update)
+ *     [0xB1]                     GET VERSION — next read returns 4 version bytes
  *
  *   Pico READS:
- *     1 byte: 0x01=playing, 0x00=idle
+ *     1 byte: 0x01=playing, 0x00=idle          (default)
+ *     4 bytes after 0xB1: [PROTOCOL_VER, FW_MAJOR, FW_MINOR, FW_PATCH]
+ *
+ *   GET_VERSION (0xB1) is a noknok ecosystem-standard command (range
+ *   0xB0–0xBF reserved). See Ecosystem/software/readme.md §5.
  */
 
 #include "ch32fun.h"
@@ -55,7 +61,18 @@
 #define CMD_PLAY_NOTE   0x01
 #define CMD_PLAY_TUNE   0x02
 #define CMD_ENTER_BOOTLOADER 0xB0   /* reset into the I2C bootloader for OTA update */
+#define CMD_GET_VERSION 0xB1        /* report [PROTOCOL_VERSION, FW_MAJOR, FW_MINOR, FW_PATCH] */
 #define REG_ASSIGN_ADDR 0x1D
+
+/* ── Version reporting (noknok standard command, DEV-1) ──────────────────────
+ * PROTOCOL_VERSION = which noknok protocol/API this module speaks — NOT the
+ * firmware version. Bumped only when the shared protocol changes. The
+ * FW_VERSION_* triple is this module's firmware semver; keep it equal to the
+ * release tag. Reported on a GET_VERSION (0xB1) read. */
+#define PROTOCOL_VERSION 0x01
+#define FW_VERSION_MAJOR 3
+#define FW_VERSION_MINOR 3
+#define FW_VERSION_PATCH 0
 
 /* Bootloader handoff cell — top 16 B of RAM, reserved by app.ld (stack ends
  * below it). Writing this magic then warm-resetting drops the module into the
@@ -141,6 +158,7 @@ static volatile DeviceState dev_state  = DEV_BOOT_WAITING;
 static volatile PlayState   play_state = PLAY_IDLE;
 static volatile uint32_t    ms_tick    = 0;
 static volatile uint8_t     new_addr   = 0;  /* set in ISR, used in main loop */
+static volatile uint8_t     version_pending = 0; /* set in ISR on 0xB1; next read returns version */
 
 /* Playback */
 static volatile uint32_t    note_start_ms = 0;
@@ -234,6 +252,17 @@ static void build_uid_response(void)
     tx_buf[8] = MODULE_TYPE;
     tx_buf[9] = crc8((const uint8_t*)tx_buf, 9);
     tx_len = 10;
+    tx_idx = 0;
+}
+
+/* 4-byte GET_VERSION response: [PROTOCOL_VERSION, FW_MAJOR, FW_MINOR, FW_PATCH] */
+static void build_version_response(void)
+{
+    tx_buf[0] = PROTOCOL_VERSION;
+    tx_buf[1] = FW_VERSION_MAJOR;
+    tx_buf[2] = FW_VERSION_MINOR;
+    tx_buf[3] = FW_VERSION_PATCH;
+    tx_len = 4;
     tx_idx = 0;
 }
 
@@ -361,6 +390,13 @@ void I2C1_EV_IRQHandler(void)
                 build_uid_response();
                 I2C1->DATAR = tx_buf[tx_idx++];
             }
+            else if (version_pending)
+            {
+                /* Previous write was GET_VERSION → return the 4 version bytes */
+                version_pending = 0;
+                build_version_response();
+                I2C1->DATAR = tx_buf[tx_idx++];
+            }
             else
             {
                 /* Status byte: 1=playing, 0=idle */
@@ -403,7 +439,12 @@ void I2C1_EV_IRQHandler(void)
         }
         else if (dev_state == DEV_ASSIGNED)
         {
-            if (rx_len > 0) cmd_ready = 1;
+            /* GET_VERSION is handled entirely in the ISR: latch it so the next
+             * read returns the version bytes. Don't route it to the main loop. */
+            if (rx_len == 1 && rx_buf[0] == CMD_GET_VERSION)
+                version_pending = 1;
+            else if (rx_len > 0)
+                cmd_ready = 1;
         }
 
         I2C1->CTLR1 |= I2C_CTLR1_ACK;
