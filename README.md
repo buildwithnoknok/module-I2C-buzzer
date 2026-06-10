@@ -6,7 +6,7 @@ Designed for audio feedback, alerts, melodies, and UI interaction in modular bui
 ![Buzzer Module Front](hardware/module-I2C-buzzer-front.png)
 ![Buzzer Module Back](hardware/module-I2C-buzzer-back.png)
 
-> **Visual concept:** open [`docs/noknok-buzzer-concept.html`](docs/noknok-buzzer-concept.html) in a browser for a full interactive diagram of the protocol and architecture.
+> **Visual concept:** see [`docs/noknok-buzzer-concept.md`](docs/noknok-buzzer-concept.md) for the protocol and architecture diagram (Markdown + SVG, renders right here on GitHub). A styled interactive version is in [`docs/noknok-buzzer-concept.html`](docs/noknok-buzzer-concept.html) (open in a browser).
 
 ---
 
@@ -200,7 +200,8 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 | `firmware/src/funconfig.h` | ch32v003fun config |
 | `firmware/src/app.ld` | Linker script (application at 0x1000, above the 4 KB bootloader) |
 | `firmware/bin/buzzer_firmware.bin` | Compiled application binary |
-| `docs/noknok-buzzer-concept.html` | Interactive protocol diagram |
+| `docs/noknok-buzzer-concept.md` | Concept diagram - Markdown + SVG (renders on GitHub) |
+| `docs/noknok-buzzer-concept.html` | Same concept as a styled interactive page (browser) |
 
 ---
 
