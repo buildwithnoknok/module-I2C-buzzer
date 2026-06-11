@@ -232,4 +232,11 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 
 ## License
 
-TBD — to be added when the repository becomes public.
+- Firmware / code: MIT — see [LICENSE](LICENSE).
+- Hardware (schematics, PCB layout, fab files): CC BY-SA 4.0 — see [LICENSE-hardware](LICENSE-hardware).
+
+---
+
+## Safety & Liability
+
+noknok hardware is an electronic device and a DIY/maker kit. You assemble, modify, flash, power, and operate it at your own risk, and it is provided as is, without warranty. See the full notice: [License, Safety & Liability](https://buildwithnoknok.github.io/safety-and-license/).
