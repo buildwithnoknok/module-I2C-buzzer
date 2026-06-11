@@ -188,7 +188,7 @@ These are **Conductor-level files shared by every module** - not buzzer-specific
 
 ## Firmware
 
-**v3.3 runs under the shared noknok I²C bootloader** ([module-I2C-bootloader](https://github.com/buildwithnoknok/module-I2C-bootloader)) — the module can be re‑flashed **over the I²C bus** (no SWDIO cable in the field). The application is linked at the `0x1000` offset (`app.ld`) above the 4 KB bootloader and reserves the top 16 B of RAM for the bootloader handoff cell. Command `0xB0` drops the running module into the bootloader for an update.
+**v3.3.1 runs under the shared noknok I²C bootloader** ([module-I2C-bootloader](https://github.com/buildwithnoknok/module-I2C-bootloader)) — the module can be re‑flashed **over the I²C bus** (no SWDIO cable in the field). The application is linked at the `0x1000` offset (`app.ld`) above the 4 KB bootloader and reserves the top 16 B of RAM for the bootloader handoff cell. Command `0xB0` drops the running module into the bootloader for an update.
 
 ```bash
 cd firmware/src
@@ -201,7 +201,7 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 
 | Metric | Value |
 |--------|-------|
-| Firmware version | v3.3 (bootloader‑hosted) |
+| Firmware version | v3.3.1 (bootloader‑hosted) |
 | Application size | 2928 B of 11 KB app region (26%) |
 | RAM used | 76 B of ~2 KB (4%) |
 
@@ -224,7 +224,7 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 | Area | Status |
 |------|--------|
 | Hardware | v1.0 |
-| Firmware | **v3.3 — complete (bootloader‑hosted, I²C OTA)** |
+| Firmware | **v3.3.1 — complete (bootloader‑hosted, I²C OTA)** |
 | Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/brain-Pico/tree/main/software)) |
 | Documentation | **complete** |
 

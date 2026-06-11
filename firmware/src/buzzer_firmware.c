@@ -1,5 +1,5 @@
 /*
- * noknok Buzzer Module Firmware  v3.3
+ * noknok Buzzer Module Firmware  v3.3.1
  * CH32V003J4M6 (SOP-8)  |  Stack: cnlohr/ch32fun
  *
  * ── What changed from v2 ────────────────────────────────────────────────
@@ -68,11 +68,15 @@
  * PROTOCOL_VERSION = which noknok protocol/API this module speaks — NOT the
  * firmware version. Bumped only when the shared protocol changes. The
  * FW_VERSION_* triple is this module's firmware semver; keep it equal to the
- * release tag. Reported on a GET_VERSION (0xB1) read. */
+ * release tag. Reported on a GET_VERSION (0xB1) read.
+ *
+ * v3.3.1 (DEV-6): version-only bump, NO functional change — exists purely to
+ *   create an installed-vs-required version delta so the OTA auto-update path
+ *   can be rehearsed end-to-end (3.3.0 buzzers see "update available" → flash). */
 #define PROTOCOL_VERSION 0x01
 #define FW_VERSION_MAJOR 3
 #define FW_VERSION_MINOR 3
-#define FW_VERSION_PATCH 0
+#define FW_VERSION_PATCH 1
 
 /* Bootloader handoff cell — top 16 B of RAM, reserved by app.ld (stack ends
  * below it). Writing this magic then warm-resetting drops the module into the
