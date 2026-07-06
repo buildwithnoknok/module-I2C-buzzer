@@ -5,8 +5,8 @@
   "bus": "I2C",
   "footprint": { "w": 20, "h": 20 },
   "pcb_thickness": 1.6,
-  "clearance_top": null,
-  "clearance_bottom": null,
+  "clearance_top": 3.0,
+  "clearance_bottom": 3.0,
   "mounting": {
     "screw": "M2.5",
     "holes": [
@@ -22,5 +22,5 @@
     "type": "grille", "shape": "circle", "x": 10, "y": 10, "dia": 12,
     "depth": "through", "verified": false
   },
-  "notes": "MLT-8530 magnetic buzzer -> sound grille. clearance_top/bottom pending physical measurement; connector x/y and grille position/size transcribed from the Ecosystem PCB guideline and estimated (buzzer assumed centered) - regenerate exact values from KiCad + measure before production."
+  "notes": "MLT-8530 magnetic buzzer, 8.5x8.7x3.0 mm, is the ONLY top-side component; sound port faces up -> lid grille. clearance_top=3.0 (buzzer height, confirmed from datasheet 2026-07-07). All electronics + the JST-SH connectors are on the BOTTOM side, so cables route in the standoff gap under the PCB and connector openings are at the bottom, not the top. clearance_bottom=3.0: the tallest bottom-side component is the side-entry JST-SH socket SM04B-SRSS-TB (2.9 mm high, A=3.0 pin span, B=6.0 body) + 0.1 mm seating clearance. Side-entry means the cable exits horizontally through the bottom-gap notch. Connector x/y and grille position transcribed/estimated (buzzer assumed centered) - regenerate exact values from KiCad."
 }
