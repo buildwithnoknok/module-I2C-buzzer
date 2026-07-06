@@ -15,12 +15,12 @@
     ]
   },
   "connectors": [
-    { "type": "JST-SH-I2C", "edge": "W", "x": 3.1,  "y": 4.5,  "role": "chain" },
-    { "type": "JST-SH-I2C", "edge": "E", "x": 16.9, "y": 15.5, "role": "chain" }
+    { "type": "JST-SH-I2C", "edge": "W", "x": 3.1,  "y": 15.5, "role": "chain" },
+    { "type": "JST-SH-I2C", "edge": "E", "x": 16.9, "y": 4.5,  "role": "chain" }
   ],
   "top_feature": {
-    "type": "grille", "shape": "circle", "x": 10, "y": 10, "dia": 12,
-    "depth": "through", "verified": false
+    "type": "grille", "shape": "circle", "x": 10, "y": 10, "dia": 8.5,
+    "depth": "through", "verified": true
   },
-  "notes": "MLT-8530 magnetic buzzer, 8.5x8.7x3.0 mm, is the ONLY top-side component; sound port faces up -> lid grille. clearance_top=3.0 (buzzer height, confirmed from datasheet 2026-07-07). All electronics + the JST-SH connectors are on the BOTTOM side, so cables route in the standoff gap under the PCB and connector openings are at the bottom, not the top. clearance_bottom=3.0: the tallest bottom-side component is the side-entry JST-SH socket SM04B-SRSS-TB (2.9 mm high, A=3.0 pin span, B=6.0 body) + 0.1 mm seating clearance. Side-entry means the cable exits horizontally through the bottom-gap notch. Connector x/y and grille position transcribed/estimated (buzzer assumed centered) - regenerate exact values from KiCad."
+  "notes": "MLT-8530 magnetic buzzer, 8.5x8.7x3.0 mm, is the ONLY top-side component; sound port faces up -> lid grille. clearance_top=3.0 (buzzer height, confirmed from datasheet 2026-07-07). All electronics + the JST-SH connectors are on the BOTTOM side, so cables route in the standoff gap under the PCB and connector openings are at the bottom, not the top. clearance_bottom=3.0: the tallest bottom-side component is the side-entry JST-SH socket SM04B-SRSS-TB (2.9 mm high, A=3.0 pin span, B=6.0 body) + 0.1 mm seating clearance. Side-entry means the cable exits horizontally through the bottom-gap notch. Positions VERIFIED from the production placement CSV (2026-04-08) and Edge_Cuts gerber (board = 20x20). Coordinates are in the TOP = buzzer/customer-facing view: buzzer centered at (10,10); JST J1 on the W edge near NORTH (y=15.5), J2 on the E edge near SOUTH (y=4.5). NOTE the KiCad file labels the MCU/connector side 'top' and the buzzer side 'bottom' - that is the opposite of the physical/customer convention used here (buzzer = top); this is a KiCad labelling quirk to be reconciled, it does not change these coordinates. mounting[] lists the intended M2.5 standard; the CURRENT board revision still uses M2 (Ø2.2) holes at (2,2)/(18,18) plus castellated pads - to be updated to M2.5 + no castellated. JST positions and PCB outline are NOT changing, so this housing stays reusable."
 }
