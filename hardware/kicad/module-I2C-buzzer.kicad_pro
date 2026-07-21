@@ -224,7 +224,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": "0.8"
+      "sch_revision": "2.0"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -473,7 +473,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "Buzzer.kicad_pro",
+    "filename": "module-I2C-buzzer.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -640,18 +640,18 @@
     "subpart_id_separator": 0,
     "top_level_sheets": [
       {
-        "filename": "Buzzer.kicad_sch",
-        "name": "Buzzer",
+        "filename": "module-I2C-buzzer.kicad_sch",
+        "name": "module-I2C-buzzer",
         "uuid": "89ac1937-28eb-4c0f-a201-5c0292dd68d3"
       }
     ],
-    "used_designators": "J4-5",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [
     [
       "89ac1937-28eb-4c0f-a201-5c0292dd68d3",
-      "Buzzer"
+      "module-I2C-buzzer"
     ]
   ],
   "text_variables": {},

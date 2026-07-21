@@ -180,9 +180,8 @@ These are **Conductor-level files shared by every module** - not buzzer-specific
 | PWM pin | PA1 (TIM1 CH2) |
 | I²C SDA | PC1 |
 | I²C SCL | PC2 |
-| Flash header | J4 — 5‑pin (GND, SWIO, RST, VCC) |
-
-> **Known hardware note:** Remove the 10Ω series resistor on VDD (R1). It causes a brownout reset when the buzzer fires at high volume.
+| Flash header | J3 — 3-pad pogo (GND, SWIO, VCC), noknok M2.5-keyed footprint. SWIO/PD1 also carries the status LED (D3, active LOW). |
+| Hardware version | v2.0 |
 
 ---
 
@@ -223,7 +222,7 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 
 | Area | Status |
 |------|--------|
-| Hardware | v1.0 |
+| Hardware | v2.0 complete |
 | Firmware | **v3.3.1 — complete (bootloader‑hosted, I²C OTA)** |
 | Python library | **complete** (in [Ecosystem repo](https://github.com/buildwithnoknok/brain-Pico/tree/main/software)) |
 | Documentation | **complete** |
