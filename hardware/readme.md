@@ -4,7 +4,7 @@ Hardware design files for the noknok Buzzer module (CH32V003J4M6 — I2C-control
 
 - KiCad project: `kicad/module-I2C-buzzer.*`
 - Schematic (PDF): `module-I2C-buzzer-Schematics.pdf`
-- BOM: `module-I2C-buzzer.xls`
+- BOM: `module-I2C-buzzer_BOM.xls`
 - Board renders: `module-I2C-buzzer-front.png`, `module-I2C-buzzer-back.png` *(pre-V2 renders — pending re-export)*
 
 Hardware is licensed CC BY-SA 4.0 (see `../LICENSE-hardware`). Connector, flashing and mounting standards follow the [noknok Ecosystem guidelines](https://github.com/buildwithnoknok/Ecosystem) (electrical + mechanical).
