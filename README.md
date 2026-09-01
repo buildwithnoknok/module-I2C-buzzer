@@ -175,7 +175,7 @@ These are **Conductor-level files shared by every module** - not buzzer-specific
 | MCU | CH32V003J4M6 (SOP‑8, RISC‑V, 48 MHz) |
 | Buzzer | MLT‑8530 (magnetic, 3.3V) |
 | Driver | MMBT3904 NPN transistor |
-| Connector | JST SH 4‑pin (Qwiic / Stemma QT compatible) |
+| Connector | JST SH 4‑pin (Qwiic / STEMMA QT compatible) |
 | Supply voltage | 3.3V via I²C connector |
 | PWM pin | PA1 (TIM1 CH2) |
 | I²C SDA | PC1 |
@@ -233,6 +233,16 @@ Flashing: normally over I²C from the Pico (`module_flasher.py` in `brain-Pico`)
 
 - Firmware / code: MIT — see [LICENSE](LICENSE).
 - Hardware (schematics, PCB layout, fab files): CC BY-SA 4.0 — see [LICENSE-hardware](LICENSE-hardware).
+
+## Trademarks
+
+**noknok** is a registered trademark in Switzerland (Swissreg 1300007033).
+
+Qwiic is a registered trademark of SparkFun Electronics, Inc. STEMMA QT is a
+trademark of Adafruit Industries, LLC. Both are named here only to state
+connector compatibility - noknok is not affiliated with, endorsed by, or
+sponsored by either company.
+---
 
 ---
 
