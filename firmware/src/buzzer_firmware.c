@@ -78,7 +78,7 @@
  *   can be rehearsed end-to-end (3.3.0 buzzers see "update available" → flash). */
 #define PROTOCOL_VERSION 0x01
 #define FW_VERSION_MAJOR 3
-#define FW_VERSION_MINOR 4
+#define FW_VERSION_MINOR 5
 #define FW_VERSION_PATCH 0
 
 /* Bootloader handoff cell — top 16 B of RAM, reserved by app.ld (stack ends
