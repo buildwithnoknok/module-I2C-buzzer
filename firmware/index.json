@@ -1,0 +1,7 @@
+{
+  "module": "buzzer",
+  "version": "3.5.0",
+  "url": "https://raw.githubusercontent.com/buildwithnoknok/module-I2C-buzzer/main/firmware/bin/buzzer_firmware.bin",
+  "requires_bootloader": "stage1",
+  "released": "2026-09-11"
+}
