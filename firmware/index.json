@@ -3,5 +3,7 @@
   "version": "3.5.0",
   "url": "https://raw.githubusercontent.com/buildwithnoknok/module-I2C-buzzer/main/firmware/bin/buzzer_firmware.bin",
   "layout": 2,
+  "size": 2980,
+  "crc32": "7dc9883d",
   "released": "2026-09-11"
 }
