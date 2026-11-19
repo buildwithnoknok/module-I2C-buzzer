@@ -63,6 +63,7 @@ The Pico sends **3–5 bytes** and returns immediately. The CH32V003 handles all
 | `0x02` `id` | **PLAY TUNE** | Play a preloaded tune |
 | `0xB0` | **ENTER BOOTLOADER** | Reset into the I²C bootloader for an over‑the‑wire firmware update (see [Firmware](#firmware)) |
 | `0xB1` | **GET VERSION** | Standard noknok command — the next read returns 4 version bytes (see below) |
+| `0xB4` | **GET ID** | Standard noknok command (ADR-005) - the next read returns the 10-byte identity `[UID x8][TYPE 0x01][CRC8]`, identical to the reply at the staging address 0x7F; answered at any time in the assigned state |
 
 **PLAY NOTE fields:**
 
